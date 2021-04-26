@@ -22,18 +22,29 @@
   (make-standard-double-deck)
   (shuffle-deck)
 
+  (set! HORIZPOS -1)
   (add-normal-slot '())
   (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-carriage-return-slot)
   (add-normal-slot '())
   (add-blank-slot)
   (add-normal-slot '())
   (add-blank-slot)
   (add-normal-slot '())
   (add-carriage-return-slot)
+
+  (set! HORIZPOS -1)
+  (add-normal-slot '())
+  (add-blank-slot)
+  (add-normal-slot '())
+  (add-blank-slot)
+  (add-normal-slot '())
+  (add-blank-slot)
+  (add-normal-slot '())
+  (add-carriage-return-slot)
+
+  (set! HORIZPOS -1)
+  (add-normal-slot '())
+  (add-blank-slot)
   (add-normal-slot '())
   (add-blank-slot)
   (add-normal-slot '())
@@ -41,13 +52,29 @@
   (add-normal-slot '())
 
   (set! HORIZPOS 0)
-  (set! VERTPOS 0.5)
+  (set! VERTPOS 0.1)
 
+  (set! HORIZPOS -1)
+  (add-blank-slot)
+  (add-normal-slot '())
   (add-blank-slot)
   (add-normal-slot '())
   (add-blank-slot)
   (add-normal-slot '())
   (add-carriage-return-slot)
+
+  (set! HORIZPOS -1)
+  (add-blank-slot)
+  (add-normal-slot '())
+  (add-blank-slot)
+  (add-normal-slot '())
+  (add-blank-slot)
+  (add-normal-slot '())
+  (add-carriage-return-slot)
+
+  (set! HORIZPOS -1)
+  (add-blank-slot)
+  (add-normal-slot '())
   (add-blank-slot)
   (add-normal-slot '())
   (add-blank-slot)
@@ -60,15 +87,16 @@
   (add-carriage-return-slot)  
   (add-carriage-return-slot)
 
+
+  ;(set! HORIZPOS (+ HORIZPOS 1))
+  
   (add-normal-slot DECK)
 
-  (deal-cards 13 '(0 1 2 3 4 5 6 7 8 9 10 11 12 0 1 2 3 4 5 6 7 8 9 10 11 12
-		     0 1 2 3 4 5 6 7 8 9 10 11 12 0 1 2 3 4 5 6 7 8 9 10 11 12 
-			0 1 2 3 4 5 6 7 8 9 10 11 12 0 1 2 3 4 5 6 7 8 9 10 11 12 
-		0 1 2 3 4 5 6 7 8 9 10 11 12 ))
-  (deal-cards-face-up 13 '(0 1 2 3 4 5 6 7 8 9 10 11 12))
+  (deal-cards-from-deck DECK  '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
+  			0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 ))
+  (deal-cards-face-up-from-deck DECK '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20))
 
-  (list 5 3))
+  (list 5 3) )
 
 (define (button-pressed slot-id card-list)
   (not (empty-slot? slot-id)))
@@ -108,8 +136,8 @@
 	     (empty-slot? slot1))
 	 (check-for-pairs (+ 1 slot1) (+ 2 slot1)))
 	((and (not (empty-slot? slot2))
-	      ;(= (get-value (get-top-card slot1) ) (get-value (get-top-card slot2)) ) )
-		(cards-eq? (get-top-card slot1) (get-top-card slot2) ))
+	      (= (get-value (get-top-card slot1) ) (get-value (get-top-card slot2)) ) )
+		;(cards-eq? (get-top-card slot1) (get-top-card slot2) ))
 	 (hint-move slot1 1 slot2))
 	(#t (check-for-pairs slot1 (+ 1 slot2)))))
 
