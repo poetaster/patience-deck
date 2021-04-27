@@ -16,87 +16,74 @@
 
 (use-modules (aisleriot interface) (aisleriot api))
 
+(define first-wall-slot-id 0)
+(define last-wall-slot-id 47)
+(define wall '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18
+                 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33
+                 34 35 36 37 38 39 40 41 42 43 44 45 46 47
+                 ))
+(define first-target-slot-id 0)
+
 (define (new-game)
   (initialize-playing-area)
   ;(make-standard-deck)
   (make-standard-double-deck)
   (shuffle-deck)
 
-  (set! HORIZPOS -1)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-carriage-return-slot)
-
-  (set! HORIZPOS -1)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-carriage-return-slot)
-
-  (set! HORIZPOS -1)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-
-  (set! HORIZPOS 0)
-  (set! VERTPOS 0.1)
-
-  (set! HORIZPOS -1)
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-carriage-return-slot)
-
-  (set! HORIZPOS -1)
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-carriage-return-slot)
-
-  (set! HORIZPOS -1)
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
+; wall
+  (add-empty-normal-slots 8)
   
-  (add-carriage-return-slot)  
   (add-carriage-return-slot)
-  (add-carriage-return-slot)  
-  (add-carriage-return-slot)
-  (add-carriage-return-slot)  
-  (add-carriage-return-slot)
-
-
-  ;(set! HORIZPOS (+ HORIZPOS 1))
+  (set! VERTPOS (- VERTPOS 0.5))
+  (set! HORIZPOS (+ HORIZPOS 0.5))
+  (add-empty-normal-slots 8)
   
-  (add-normal-slot DECK)
+  (add-carriage-return-slot)
+  (set! VERTPOS (- VERTPOS 0.5))
+  (add-empty-normal-slots 8)
+  
+  (add-carriage-return-slot)
+  (add-carriage-return-slot)
+  (set! VERTPOS (- VERTPOS 0.5))
+  (set! HORIZPOS (+ HORIZPOS 0.5))
+  (add-empty-normal-slots 8)
+  
+  (add-carriage-return-slot)
+  (set! VERTPOS (- VERTPOS 0.5))
+  (add-empty-normal-slots 8)
+  
+  (add-carriage-return-slot)
+  (set! VERTPOS (- VERTPOS 0.5))
+  (set! HORIZPOS (+ HORIZPOS 0.5))
+  (add-empty-normal-slots 8)
+  
+  
+; deck
+ ; (add-carriage-return-slot)
+ ; (set! VERTPOS (+ VERTPOS 0.5))
+ ; (add-blank-slot)
+ ; (add-blank-slot)
+ ; (add-normal-slot DECK)
 
-  (deal-cards-from-deck DECK  '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
-  			0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 ))
-  (deal-cards-face-up-from-deck DECK '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20))
+;  (add-normal-slot DECK)
 
-  (list 5 3) )
+  ;(deal-cards-face-up 48  wall)  
+  
+ (deal-cards-face-up-from-deck DECK  '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23
+                                	0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23
+					24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47
+					24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47
+                                 	0 1 2 3 4 5 6 7 ))
+  ;(deal-cards-face-up-from-deck DECK '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23))
+
+
+  ;(list 8 8) )
+  (list 8 6) )
+
+(define (add-empty-normal-slots n)
+  (if (> n 0)
+      (begin (add-normal-slot '())
+             (add-empty-normal-slots (- n 1)))))
 
 (define (button-pressed slot-id card-list)
   (not (empty-slot? slot-id)))
@@ -111,10 +98,11 @@
   (and (droppable? start-slot card-list end-slot)
        (remove-card end-slot)
        (add-to-score! 2)
-       (or (empty-slot? start-slot)
-	   (flip-top-card start-slot))
-       (or (empty-slot? end-slot)
-	   (flip-top-card end-slot))))
+       ;(or (empty-slot? start-slot)
+       ;   (flip-top-card start-slot))
+       ;(or (empty-slot? end-slot)
+	;   (flip-top-card end-slot))
+	))
 
 (define (button-clicked slot-id)
   #f)
