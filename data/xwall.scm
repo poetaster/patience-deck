@@ -16,87 +16,55 @@
 
 (use-modules (aisleriot interface) (aisleriot api))
 
+(define first-wall-slot-id 0)
+(define last-wall-slot-id 26)
+(define wall '(
+ 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 
+ 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
+ 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 
+ 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
+))
+(define first-target-slot-id 0)
+
 (define (new-game)
   (initialize-playing-area)
   ;(make-standard-deck)
   (make-standard-double-deck)
   (shuffle-deck)
 
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-carriage-return-slot)
-
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-carriage-return-slot)
-
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-
-  (set! HORIZPOS 0)
-  (set! VERTPOS 0.1)
-
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-carriage-return-slot)
-
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-carriage-return-slot)
+; wall
+  (add-empty-normal-slots 7)
   
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
-  (add-blank-slot)
-  (add-normal-slot '())
   (add-carriage-return-slot)
-
-  ;(set! HORIZPOS (+ HORIZPOS 1))
+  (set! VERTPOS (- VERTPOS 0.5))
+  (set! HORIZPOS (+ HORIZPOS 0.5))
+  (add-empty-normal-slots 6)
   
-  ;(add-normal-slot DECK)
-  ; main deal
-  (deal-cards-face-up-from-deck DECK  '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
-  					0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25  
-  					0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 
-  					0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 ))
-  ; remnant
-  ;(deal-cards-face-up-from-deck DECK '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 ))
+  (add-carriage-return-slot)
+  (add-carriage-return-slot)
+  (set! VERTPOS (- VERTPOS 0.5))
+  (add-empty-normal-slots 7)
+  
+  (add-carriage-return-slot)
+  (set! VERTPOS (- VERTPOS 0.5))
+  (set! HORIZPOS (+ HORIZPOS 0.5))
+  (add-empty-normal-slots 6)
+  
+ (deal-cards-face-up-from-deck DECK  wall)  
+ 
+; (deal-cards-face-up-from-deck DECK  '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
+ ; 					0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25  
+ ; 					0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 
+ ; 					0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 ))
+  
 
-  (list 8 4) )
+
+  (list 7 4) )
+
+(define (add-empty-normal-slots n)
+  (if (> n 0)
+      (begin (add-normal-slot '())
+             (add-empty-normal-slots (- n 1)))))
 
 (define (button-pressed slot-id card-list)
   (not (empty-slot? slot-id)))
@@ -137,8 +105,8 @@
 	     (empty-slot? slot1))
 	 (check-for-pairs (+ 1 slot1) (+ 2 slot1)))
 	((and (not (empty-slot? slot2))
-	      (= (get-value (get-top-card slot1) ) (get-value (get-top-card slot2)) ) )
-		;(cards-eq? (get-top-card slot1) (get-top-card slot2) ))
+	      ;(= (get-value (get-top-card slot1) ) (get-value (get-top-card slot2)) ) )
+		(cards-eq? (get-top-card slot1) (get-top-card slot2) ))
 	 (hint-move slot1 1 slot2))
 	(#t (check-for-pairs slot1 (+ 1 slot2)))))
 
