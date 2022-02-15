@@ -1,6 +1,6 @@
 /*
  * Patience Deck is a collection of patience games.
- * Copyright (C) 2020-2021  Tomi Leppänen
+ * Copyright (C) 2020-2022 Tomi Leppänen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,22 +15,46 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import QtFeedback 5.0
 import QtQml 2.2
 import QtQuick 2.6
 import Sailfish.Silica 1.0
+import Nemo.Configuration 1.0
+import Nemo.KeepAlive 1.2
 import Patience 1.0
+import "../toolbar"
+import "components"
 
 Page {
     id: page
 
-    property bool isPortrait: orientation & Orientation.PortraitMask
+    property int longSide: Math.max(page.height, page.width)
+    property int shortSide: Math.min(page.height, page.width)
     property bool active: page.status === PageStatus.Active
+    property bool needsGameStart
 
     allowedOrientations: Orientation.All
 
+    function resetHint() {
+        message.hint = ""
+    }
+
     onOrientationChanged: message.x = 0
 
-    onActiveChanged: Patience.paused = !active
+    onActiveChanged: {
+        Patience.paused = !active
+        resetHint()
+        if (needsGameStart) {
+            Patience.startNewGame()
+            needsGameStart = false
+        }
+    }
+
+    Component.onCompleted: {
+        // Break bindings
+        page.shortSide = Math.min(page.height, page.width)
+        page.longSide = Math.max(page.height, page.width)
+    }
 
     Connections {
         target: Qt.application
@@ -40,11 +64,34 @@ Page {
             } else {
                 Patience.paused = true
             }
+            resetHint()
         }
     }
 
     SilicaFlickable {
         anchors.fill: parent
+
+        states: State {
+            name: "landscape"
+            when: page.isLandscape
+            PropertyChanges { target: toolbar; vertical: true }
+            PropertyChanges {
+                target: tableContainer
+
+                x: toolbar.width
+                y: 0
+                height: shortSide - messageBar.height
+                width: longSide - toolbar.width
+            }
+            PropertyChanges {
+                target: table
+                height: shortSide - messageBar.height
+                width: longSide - toolbar.totalSpaceX
+                horizontalMargin: Theme.paddingLarge
+                verticalMargin: Theme.paddingSmall
+            }
+            AnchorChanges { target: messageBar; anchors.left: toolbar.right }
+        }
 
         PullDownMenu {
             id: pullDownMenu
@@ -52,7 +99,7 @@ Page {
             MenuItem {
                 //% "About"
                 text: qsTrId("patience-me-about")
-                onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml"))
+                onClicked: pageStack.push(Qt.resolvedUrl("about/AboutPage.qml"))
             }
 
             MenuItem {
@@ -63,10 +110,10 @@ Page {
             }
 
             MenuItem {
-                //% "Game options"
+                //% "Options & Rules"
                 text: qsTrId("patience-me-game_options")
                 enabled: !Patience.engineFailed
-                onClicked: pageStack.push(Qt.resolvedUrl("GameOptions.qml"))
+                onClicked: pageStack.push(Qt.resolvedUrl("OptionsAndRules.qml"))
             }
         }
 
@@ -76,44 +123,44 @@ Page {
             id: toolbar
 
             enabled: !Patience.engineFailed
-            vertical: page.isLandscape
+            vertical: false
+            pageActive: page.active
             z: 10
-
-            Connections {
-                /*
-                 * This is a "looks good enough" workaround for another issue.
-                 * I would prefer to set tableContainer.clip = true while
-                 * transitioning pages but for some reason Table doesn't behave
-                 * well that is set. I would like to fix that for other reasons
-                 * as well.
-                 */
-                target: pageStack
-                onBusyChanged: if (pageStack.busy) toolbar.expanded = false
-            }
         }
 
         Item {
             id: tableContainer
 
-            clip: page.isPortrait && (toolbar.expanded || toolbar.animating)
-            x: page.isLandscape ? toolbar.width : 0
-            y: page.isLandscape ? 0 : toolbar.height
-            height: page.height - messageBar.height - (page.isLandcape ? 0 : toolbar.height)
-            width: page.width - (page.isLandscape ? toolbar.width : 0)
+            clip: toolbar.expanded || toolbar.animating
+            x: 0
+            y: toolbar.height
+            height: longSide - messageBar.height - toolbar.height
+            width: shortSide
 
             Table {
                 id: table
 
                 enabled: Patience.state < Patience.GameOverState && !Patience.engineFailed
-                height: page.height - (page.isLandscape ? 0 : Theme.itemSizeLarge) - messageBar.height
-                width: page.width - (page.isLandscape ? Theme.itemSizeLarge : 0)
+
+                height: longSide - toolbar.totalSpaceY - messageBar.height
+                width: shortSide
+                anchors.horizontalCenter: parent.horizontalCenter
+
                 minimumSideMargin: Theme.horizontalPageMargin
-                horizontalMargin: isPortrait ? Theme.paddingSmall : Theme.paddingLarge
+                horizontalMargin: Theme.paddingSmall
                 maximumHorizontalMargin: Theme.paddingLarge
-                verticalMargin: isPortrait ? Theme.paddingLarge : Theme.paddingSmall
+                verticalMargin: Theme.paddingLarge
                 maximumVerticalMargin: Theme.paddingLarge
+
+                backgroundColor: settings.backgroundColor
                 highlightColor: Theme.rgba(Theme.highlightColor, Theme.opacityLow)
+
                 layer.enabled: pullDownMenu.active
+
+                FeedbackEvent.onClicked: feedback.playEffect()
+                FeedbackEvent.onDropSucceeded: feedback.playEffect()
+                FeedbackEvent.onDropFailed: feedback.playEffect(true)
+
                 Component.onCompleted: Patience.restoreSavedOrLoad("klondike.scm")
             }
         }
@@ -122,11 +169,12 @@ Page {
             id: messageBar
 
             anchors {
-                left: page.isLandscape ? toolbar.right : parent.left
+                left: parent.left
                 right: parent.right
                 bottom: parent.bottom
             }
             height: message.height
+            clip: message.contentWidth > width
 
             drag {
                 target: message
@@ -155,24 +203,22 @@ Page {
             id: overlayLoader
 
             active: Patience.state === Patience.WonState || Patience.state === Patience.GameOverState
-            source: "GameOverOverlay.qml"
+            source: "components/GameOverOverlay.qml"
             x: tableContainer.x
             y: tableContainer.y
-            height: table.height
-            width: table.width
+            height: tableContainer.height
+            width: tableContainer.width
             z: 5
-
-            onActiveChanged: if (active) toolbar.expanded = false
         }
 
         Loader {
             id: failureOverlayLoader
             active: Patience.engineFailed
-            source: "EngineFailureOverlay.qml"
+            source: "components/EngineFailureOverlay.qml"
             x: tableContainer.x
             y: tableContainer.y
-            height: table.height
-            width: table.width
+            height: tableContainer.height
+            width: tableContainer.width
             z: 10
         }
     }
@@ -181,13 +227,35 @@ Page {
         target: Patience
         onStateChanged: {
             if (Patience.state === Patience.LoadedState) {
-                Patience.startNewGame()
+                if (active) {
+                    Patience.startNewGame()
+                } else {
+                    needsGameStart = true
+                }
+            } else if (Patience.state === Patience.StartingState) {
+                resetHint()
             }
         }
         onHint: {
             message.hint = hint
             hintTimer.restart()
         }
-        onCardMoved: message.hint = ""
+        onCardMoved: resetHint()
     }
+
+    DisplayBlanking {
+        preventBlanking: settings.preventBlanking && Patience.state === Patience.RunningState && !Patience.paused
+    }
+
+    ThemeEffect {
+        id: feedback
+
+        function playEffect(weak) {
+            if (settings.feedbackEffects) {
+                play(weak ? ThemeEffect.PressWeak : ThemeEffect.Press)
+            }
+        }
+    }
+
+    Settings { id: settings }
 }

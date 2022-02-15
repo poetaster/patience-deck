@@ -20,14 +20,13 @@ import Sailfish.Silica 1.0
 import Patience 1.0
 
 Page {
-    id: page
-
     allowedOrientations: Orientation.All
 
     SilicaListView {
         id: listView
         model: GameList { id: gameList }
         anchors.fill: parent
+        bottomMargin: Theme.paddingLarge
         header: PageHeader {
             //% "Games"
             title: qsTrId("patience-he-games")

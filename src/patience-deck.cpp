@@ -19,25 +19,49 @@
 #include <QtQuick>
 #endif
 
+#include <QCommandLineParser>
 #include <QGuiApplication>
 #include <QQuickView>
 #include <QScopedPointer>
 #include <QtQml>
 #include <sailfishapp.h>
-#include "patience.h"
-#include "table.h"
+#include "constants.h"
+#include "engine.h"
+#include "feedbackevent.h"
 #include "gamelist.h"
 #include "gameoptionmodel.h"
+#include "helpmodel.h"
+#include "patience.h"
+#include "table.h"
+#include "texturerenderer.h"
 
 int main(int argc, char *argv[])
 {
     qputenv("GUILE_AUTO_COMPILE", "0");
     QScopedPointer<QGuiApplication> app(SailfishApp::application(argc, argv));
     QScopedPointer<QQuickView> view(SailfishApp::createView());
+
+    QCommandLineParser parser;
+    parser.setApplicationDescription("A collection of patience games.");
+    auto helpOption = parser.addHelpOption();
+    Engine::addArguments(&parser);
+    Table::addArguments(&parser);
+    TextureRenderer::addArguments(&parser);
+
+    parser.process(*app);
+    if (parser.isSet(helpOption))
+        parser.showHelp();
+    Engine::setArguments(&parser);
+    Table::setArguments(&parser);
+    TextureRenderer::setArguments(&parser);
+
     qmlRegisterSingletonType<Patience>("Patience", 1, 0, "Patience", &Patience::instance);
     qmlRegisterType<Table>("Patience", 1, 0, "Table");
+    qmlRegisterUncreatableType<FeedbackEvent>("Patience", 1, 0, "FeedbackEvent", "This is an attached property to Table");
     qmlRegisterType<GameList>("Patience", 1, 0, "GameList");
     qmlRegisterType<GameOptionModel>("Patience", 1, 0, "GameOptions");
+    qmlRegisterType<HelpModel>("Patience", 1, 0, "HelpModel");
+    app->setApplicationVersion(QUOTE(VERSION));
     view->setSource(SailfishApp::pathToMainQml());
     view->show();
     return app->exec();

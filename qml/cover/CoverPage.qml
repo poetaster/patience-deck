@@ -38,7 +38,7 @@ CoverBackground {
             anchors.horizontalCenter: parent.horizontalCenter
             text: Patience.gameName
             horizontalAlignment: Text.AlignHCenter
-            width: parent.width - 2*Theme.paddingSmall
+            width: parent.width - 2 * Theme.paddingMedium
             wrapMode: Text.Wrap
         }
 
@@ -46,6 +46,16 @@ CoverBackground {
             anchors.horizontalCenter: parent.horizontalCenter
             text: Patience.elapsedTime
             color: Theme.secondaryColor
+        }
+
+        Icon {
+            anchors.horizontalCenter: parent.horizontalCenter
+            source: Patience.state === Patience.WonState
+                    ? "../../buttons/icon-m-fireworks.svg"
+                    : "../../buttons/icon-m-skull.svg"
+            sourceSize.height: Theme.iconSizeLarge
+            sourceSize.width: Theme.iconSizeLarge
+            visible: Patience.state >= Patience.GameOverState
         }
     }
 }
