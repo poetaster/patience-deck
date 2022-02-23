@@ -1,6 +1,6 @@
 /*
  * Patience Deck is a collection of patience games.
- * Copyright (C) 2020-2021 Tomi Leppänen
+ * Copyright (C) 2020-2022 Tomi Leppänen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,28 +21,26 @@
 #include <QElapsedTimer>
 #include <QPointF>
 #include <QQuickItem>
+#include "countableid.h"
 #include "enginedata.h"
 
 class Card;
-class FeedbackEventAttachedType;
 class QMouseEvent;
+class Selection;
 class Slot;
 class Table;
-class Drag : public QQuickItem
+class Drag : public QQuickItem, public CountableId
 {
     Q_OBJECT
 
 public:
-    Drag(QMouseEvent *event, Table *table, Slot *slot, Card *card);
+    Drag(QMouseEvent *event, Table *table, Card *card, Selection *selection = nullptr);
     ~Drag();
 
     Card *card() const;
-    Slot *source() const;
 
     void update(QMouseEvent *event);
     void finish(QMouseEvent *event);
-    void drop(Slot *slot);
-    void cancel();
 
 signals:
     void doDrag(quint32 id, int slotId, const CardList &cards);
@@ -62,7 +60,8 @@ private slots:
 
 private:
     enum DragState {
-        NoDrag,
+        WaitingForSelection = -1,
+        NoDrag = 0,
         AboutToDrag,
         StartingDrag,
         Dragging,
@@ -85,13 +84,14 @@ private:
     bool mayBeAClick(QMouseEvent *event);
     void checkTargets(bool force = false);
     void highlightOrDrop();
+    void drop(Slot *slot);
+    void move(const QPointF point);
+    void cancel();
     void done();
-    FeedbackEventAttachedType *feedback();
+    Card *firstCard() const;
     static bool couldBeDoubleClick(const Card *card);
-    static quint32 nextId();
     static CardList toCardData(const QList<Card *> &cards, DragState state);
 
-    static quint32 s_count;
     static QElapsedTimer s_doubleClickTimer;
     static const Card *s_lastCard;
 
@@ -104,6 +104,7 @@ private:
     Table *m_table;
     Card *m_card;
     Slot *m_source;
+    Selection *m_selection;
     int m_target;
     QList<Slot *> m_targets;
     QList<Card *> m_cards;

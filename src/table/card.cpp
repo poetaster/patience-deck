@@ -1,6 +1,6 @@
 /*
  * Patience Deck is a collection of patience games.
- * Copyright (C) 2020-2021 Tomi Leppänen
+ * Copyright (C) 2020-2022 Tomi Leppänen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -200,55 +200,37 @@ void Card::mousePressEvent(QMouseEvent *event)
 {
     qCDebug(lcMouse) << event << "for" << this;
 
-    Drag *drag = m_table->drag(event, this);
-
-    if (!drag) {
-        qCWarning(lcDrag) << "Could not handle mouse press: Another drag ongoing!";
-        return;
-    }
-
-    setKeepMouseGrab(true);
+    if (m_table->drag(event, this))
+        setKeepMouseGrab(true);
 }
 
 void Card::mouseReleaseEvent(QMouseEvent *event)
 {
     qCDebug(lcMouse) << event << "for" << this;
 
-    auto drag = m_table->drag(event, this);
-
-    if (!drag) {
-        qCWarning(lcDrag) << "Could not handle mouse release: no drag ongoing or there is another drag!";
-        return;
+    if (Drag *drag = m_table->drag(event, this)) {
+        drag->finish(event);
+        setKeepMouseGrab(false);
     }
-
-    drag->finish(event);
-
-    setKeepMouseGrab(false);
 }
 
 void Card::mouseMoveEvent(QMouseEvent *event)
 {
     qCDebug(lcMouse) << event << "for" << this;
 
-    auto drag = m_table->drag(event, this);
-
-    if (!drag) {
-        qCWarning(lcDrag) << "Could not handle mouse move: no drag ongoing or there is another drag!";
-        return;
-    }
-
-    drag->update(event);
+    if (Drag *drag = m_table->drag(event, this))
+        drag->update(event);
 }
 
 Slot *Card::slot() const
 {
-    return dynamic_cast<Slot *>(parentItem());
+    return qobject_cast<Slot *>(parentItem());
 }
 
 bool Card::highlighted() const
 {
     Slot *slot = this->slot();
-    return slot && slot->highlighted() && slot->top() == this;
+    return slot && slot->highlighted(this);
 }
 
 QDebug operator<<(QDebug debug, const Card *card)

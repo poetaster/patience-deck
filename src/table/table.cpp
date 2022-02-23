@@ -1,6 +1,6 @@
 /*
  * Patience Deck is a collection of patience games.
- * Copyright (C) 2020-2021 Tomi Leppänen
+ * Copyright (C) 2020-2022 Tomi Leppänen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,14 +26,16 @@
 #include <QSGSimpleRectNode>
 #include <QSGTexture>
 #include <QStyleHints>
-#include "table.h"
-#include "constants.h"
 #include "card.h"
+#include "constants.h"
 #include "drag.h"
 #include "engine.h"
-#include "slot.h"
-#include "texturerenderer.h"
+#include "feedbackevent.h"
 #include "logging.h"
+#include "selection.h"
+#include "slot.h"
+#include "table.h"
+#include "texturerenderer.h"
 
 namespace {
 
@@ -87,7 +89,7 @@ Table::Table(QQuickItem *parent)
     , m_highlightedSlot(nullptr)
     , m_highlightColor(DefaultHighlightColor)
     , m_manager(this)
-    , m_drag(nullptr)
+    , m_interaction(nullptr)
     , m_cardTexture(nullptr)
     , m_pendingCardTexture(nullptr)
     , m_previousWindow(nullptr)
@@ -448,14 +450,11 @@ bool Table::preparing() const
     return m_manager.preparing();
 }
 
-QList<Slot *> Table::getSlotsFor(const Card *card, Slot *source)
+QList<Slot *> Table::getSlotsFor(const QRectF &rect, Slot *source)
 {
-    auto rect = mapRectFromItem(card, card->boundingRect());
     QMap<qreal, Slot *> results;
     for (Slot *slot : m_slots) {
         auto box = mapRectFromItem(slot, slot->box());
-        if (box.width() > card->width() && box.height() > card->height())
-            qCWarning(lcTable) << "Box for" << slot << "is too big" << box;
         auto overlapped = rect.intersected(box);
         if (!overlapped.isEmpty())
             results.insert(overlapped.height() * overlapped.width(), slot);
@@ -470,13 +469,31 @@ QList<Slot *> Table::getSlotsFor(const Card *card, Slot *source)
     return sorted;
 }
 
-void Table::highlight(Slot *slot)
+QRectF Table::getBoundingRect(const QList<Card *> &cards)
+{
+    // Assumes that cards are in order
+    Card *first = cards.first();
+    Card *last = cards.last();
+    return mapRectFromItem(first, first->boundingRect()).united(mapRectFromItem(last, last->boundingRect()));
+}
+
+QList<Slot *> Table::getSlotsFor(const Card *card, const QList<Card *> cards, Slot *source)
+{
+    QList<Slot *> results = getSlotsFor(mapRectFromItem(card, card->boundingRect()), source);
+    for (Slot *slot : getSlotsFor(getBoundingRect(cards), source)) {
+        if (!results.contains(slot))
+            results.append(slot);
+    }
+    return results;
+}
+
+void Table::highlight(Slot *slot, Card *card)
 {
     if (m_highlightedSlot != slot) {
         if (m_highlightedSlot)
             m_highlightedSlot->removeHighlight();
         if (slot)
-            slot->highlight();
+            slot->highlight(card);
         m_highlightedSlot = slot;
         smudge(HighlightedSlot);
         update();
@@ -499,9 +516,9 @@ void Table::clear()
 {
     m_slots.clear();
     m_highlightedSlot = nullptr;
-    if (m_drag)
-        m_drag->deleteLater();
-    m_drag = nullptr;
+    if (m_interaction)
+        m_interaction->deleteLater();
+    m_interaction = nullptr;
     m_tableSize = QSizeF();
     m_cardSize = QSizeF();
     setCardTexture(nullptr);
@@ -518,25 +535,46 @@ void Table::store(const QList<Card *> &cards)
 
 Drag *Table::drag(QMouseEvent *event, Card *card)
 {
-    if (event->type() != QEvent::MouseButtonPress && m_drag && m_drag->card() == card)
-        return m_drag;
+    Selection *selection = qobject_cast<Selection *>(m_interaction);
+    if (selection && event->type() == QEvent::MouseButtonPress) {
+        if (selection->slot() == card->slot())
+            // Give this selection to a new drag to handle
+            m_interaction = nullptr;
+        else
+            selection->finish(card->slot());
+    } else if (Drag *drag = qobject_cast<Drag *>(m_interaction)) {
+        if (event->type() != QEvent::MouseButtonPress && drag->card() == card)
+            return drag;
 
-    if (m_drag) {
-        qCWarning(lcTable) << "Ignoring mouse event due to previous drag still existing" << m_drag;
-        return nullptr;
+        if (event->type() == QEvent::MouseButtonPress)
+            qCWarning(lcTable) << "Ignoring mouse press due to previous drag still existing" << drag;
+        else if (event->type() == QEvent::MouseButtonRelease)
+            qCWarning(lcTable) << "Ignoring mouse release due to previous drag still existing" << drag;
+        else if (event->type() == QEvent::MouseMove)
+            qCWarning(lcTable) << "Ignoring mouse move due to previous drag still existing" << drag;
     }
 
-    if (event->type() == QEvent::MouseButtonPress && card->slot()) {
-        m_drag = new Drag(event, this, card->slot(), card);
-        Drag *drag = m_drag;
-        connect(m_drag, &Drag::finished, this, [this, drag] {
-            if (m_drag == drag)
-                m_drag = nullptr;
+    if (!m_interaction && event->type() == QEvent::MouseButtonPress && card->slot()) {
+        Drag *drag = new Drag(event, this, card, selection);
+        m_interaction = drag;
+        connect(drag, &Drag::finished, this, [this, drag] {
+            if (m_interaction == drag)
+                m_interaction = nullptr;
         });
-        return m_drag;
+        return drag;
     }
 
     return nullptr;
+}
+
+void Table::select(Card *card)
+{
+    Selection *selection = new Selection(this, card->slot(), card);
+    m_interaction = selection;
+    connect(selection, &Selection::finished, this, [this, selection] {
+        if (m_interaction == selection)
+            m_interaction = nullptr;
+    });
 }
 
 void Table::handleSetExpansionToDown(int id, double expansion)
@@ -748,17 +786,30 @@ Table::iterator Table::end()
     return m_slots.keyEnd();
 }
 
+Slot *Table::findSlotAtPoint(const QPointF point) const
+{
+    for (Slot *slot : m_slots) {
+        if (slot->contains(mapToItem(slot, point)))
+            return slot;
+    }
+    return nullptr;
+}
+
 void Table::mousePressEvent(QMouseEvent *event)
 {
     qCDebug(lcMouse) << event << "for" << this;
 
-    for (Slot *slot : m_slots) {
-        QPointF point = mapToItem(slot, event->pos());
-        if (slot->contains(point)) {
-            qCDebug(lcMouse) << "Found" << slot << "on click position";
-            m_timer.start();
-            m_startPoint = event->pos();
-        }
+    Slot *slot = findSlotAtPoint(event->pos());
+    if (Selection *selection = qobject_cast<Selection *>(m_interaction)) {
+        if (slot)
+            selection->finish(slot);
+        else
+            selection->cancel();
+        m_timer.invalidate(); // Ensure that release event does nothing
+    } else if (slot) {
+        qCDebug(lcMouse) << "Found" << slot << "on click position";
+        m_timer.start();
+        m_startPoint = event->pos();
     }
 }
 
@@ -767,16 +818,21 @@ void Table::mouseReleaseEvent(QMouseEvent *event)
     qCDebug(lcMouse) << event << "for" << this;
 
     auto styleHints = QGuiApplication::styleHints();
-    if (!m_timer.hasExpired(styleHints->startDragTime())
+    if (m_timer.isValid() && !m_timer.hasExpired(styleHints->startDragTime())
             && (m_startPoint - event->pos()).manhattanLength() < styleHints->startDragDistance()) {
         for (Slot *slot : m_slots) {
             QPointF point = mapToItem(slot, event->pos());
             if (slot->contains(point)) {
                 qCDebug(lcTable) << "Detected click on" << slot;
-                emit doClick(-1, slot->id());
+                emit doClick(id(), slot->id());
             }
         }
     }
+}
+
+FeedbackEventAttachedType *Table::feedback()
+{
+    return qobject_cast<FeedbackEventAttachedType*>(qmlAttachedPropertiesObject<FeedbackEvent>(this));
 }
 
 QDebug operator<<(QDebug debug, const Table *table)

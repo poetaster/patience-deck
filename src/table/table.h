@@ -1,6 +1,6 @@
 /*
  * Patience Deck is a collection of patience games.
- * Copyright (C) 2020-2021 Tomi Leppänen
+ * Copyright (C) 2020-2022 Tomi Leppänen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,16 +25,18 @@
 #include <QSizeF>
 #include <QThread>
 #include <QtQuick/QQuickItem>
+#include "countableid.h"
 #include "engine.h"
 #include "enginedata.h"
 #include "manager.h"
 #include "slot.h"
 
+class FeedbackEventAttachedType;
 class QCommandLineParser;
 class QSGTexture;
 class QQuickWindow;
 class SlotNode;
-class Table : public QQuickItem
+class Table : public QQuickItem, public CountableId
 {
     Q_OBJECT
     Q_PROPERTY(qreal minimumSideMargin READ minimumSideMargin
@@ -91,14 +93,16 @@ public:
     QSizeF cardMargin() const;
     bool preparing() const;
 
-    QList<Slot *> getSlotsFor(const Card *card, Slot *source);
-    void highlight(Slot *slot);
+    QList<Slot *> getSlotsFor(const Card *card, const QList<Card *> cards, Slot *source);
+    void highlight(Slot *slot, Card *card = nullptr);
+    FeedbackEventAttachedType *feedback();
 
     void addSlot(Slot *slot);
     Slot *slot(int id) const;
     void clear();
     void store(const QList<Card *> &cards);
     Drag *drag(QMouseEvent *event, Card *card);
+    void select(Card *card);
 
     typedef QMap<int, Slot *>::key_iterator iterator;
     iterator begin();
@@ -160,6 +164,9 @@ private:
     static void setMaterialForSlotNode(SlotNode *node);
     static void setGeometryForSlotNode(SlotNode *node, Slot *slot);
     void setHighlightForSlotNode(SlotNode *node, Slot *slot);
+    QRectF getBoundingRect(const QList<Card *> &cards);
+    QList<Slot *> getSlotsFor(const QRectF &rect, Slot *source);
+    Slot *findSlotAtPoint(const QPointF point) const;
 
     QMap<int, Slot *> m_slots;
     qreal m_minimumSideMargin;
@@ -182,7 +189,7 @@ private:
     QPointF m_startPoint;
 
     Manager m_manager;
-    Drag *m_drag;
+    QObject *m_interaction;
 
     QThread m_textureThread;
     QSGTexture *m_cardTexture;
