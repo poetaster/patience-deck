@@ -85,13 +85,15 @@ build_libunistring() {
     then
         echo "Building libunistring..."
         pushd ${LIBUNISTRING}/
-        LD_LIBRARY_PATH=/usr/bin/gconv
+        LD_LIBRARY_PATH=/usr/lib/gconv
+        export LD_LIBRARY_PATH
         ./configure \
                 --disable-rpath \
                 --disable-static \
                 --prefix="/usr/share/harbour-patience-deck/"
         make $@
         make DESTDIR=${_PREFIX}/ install
+        export -n LD_LIBRARY_PATH
         popd
         echo "Built libunistring"
     else
@@ -192,8 +194,10 @@ build_guile() {
  # When compiling with GCC on some OSs (Solaris, AIX), _Complex_I doesn't
  # work; in the reported cases so far, 1.0fi works well instead.  According
 EOF
-        LD_LIBRARY_PATH=${_LIBDIR}
+        LD_LIBRARY_PATH=/usr/lib/gconv:${_LIBDIR}
         PKG_CONFIG_PATH=${_LIBDIR}/pkgconfig
+        export LD_LIBRARY_PATH
+        export PKG_CONFIG_PATH
         autoreconf -i -f
         sed '/^\s*acl_libdirstem2=/s/=/=lib/' -i configure
         ./configure \
@@ -211,6 +215,8 @@ EOF
         echo '#define HAVE_GC_MOVE_DISAPPEARING_LINK 1' >> config.h
         make $@
         make DESTDIR=${_PREFIX}/ install
+        export -n LD_LIBRARY_PATH
+        export -n PKG_CONFIG_PATH
         popd
         echo "Built guile"
     else

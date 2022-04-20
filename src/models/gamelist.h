@@ -26,7 +26,8 @@ class GameList : public QAbstractListModel
     Q_OBJECT
 
 public:
-    static QString displayable(const QString &fileName);
+    static QString capitalized(const QString &fileName);
+    static QString translated(const QString &fileName);
     static QString name(const QString &fileName);
     static bool isSupported(const QString &fileName);
     static bool showAll();
@@ -44,6 +45,8 @@ public:
         DisplayRole = Qt::DisplayRole,
         FileNameRole = Qt::UserRole,
         NameRole,
+        TranslatedRole,
+        CapitalizedRole,
         SupportedRole,
         SectionRole,
         FavoriteRole,
@@ -58,6 +61,7 @@ public:
 
 private:
     static MGConfItem *showAllConf();
+    static bool lessThan(const QString &a, const QString &b);
 
     static QSet<QString> s_allowlist;
     static QHash<int, QByteArray> s_roleNames;

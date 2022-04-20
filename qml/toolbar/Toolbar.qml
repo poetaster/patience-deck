@@ -30,14 +30,14 @@ Item {
                                               || horizontalExpandedTransition.running
                                               || verticalTransition.running
                                               || verticalExpandedTransition.running
-    readonly property int buttonCountHorizontal: Math.ceil(shortSide / 2 / Theme.itemSizeLarge)
+    readonly property int buttonCountHorizontal: Math.ceil(Screen.width / 2 / Theme.itemSizeLarge)
     readonly property int spaceY: handle.y
     readonly property int minimumSpaceY: Theme.itemSizeLarge
     readonly property int maximumSpaceY: extraButtons.y + extraButtons.height + Theme.paddingSmall
     readonly property bool showHandleY: buttonCountHorizontal < 5
     readonly property int totalSpaceY: minimumSpaceY + (showHandleY ? handleWidth : 0)
     readonly property int buttonCountVertical: Math.max(
-                            Math.floor((shortSide - titleVertical.height) / Theme.itemSizeLarge),
+                            Math.floor((Screen.width - titleVertical.height) / Theme.itemSizeLarge),
                             Patience.showDeal ? 5 : 4)
     readonly property int spaceX: handle.x
     readonly property int minimumSpaceX: Theme.itemSizeLarge
@@ -54,7 +54,8 @@ Item {
     readonly property int toolbarVelocity: Theme.dp(3000)
 
     height: totalSpaceY
-    width: shortSide
+    width: Screen.width
+    state: "non-vertical"
     states: [
         State {
             name: "dragged"
@@ -66,7 +67,14 @@ Item {
         State {
             name: "expanded"
             when: !vertical && expanded
+            extend: "non-vertical"
             PropertyChanges { target: toolbar; height: maximumSpaceY + handleWidth }
+        },
+        State {
+            // To ensure that title is visible also on portrait when the app is started in landscape
+            name: "non-vertical"
+            when: !vertical
+            PropertyChanges { target: title; visible: true }
         },
         State {
             name: "vertical dragged"
@@ -91,7 +99,7 @@ Item {
             PropertyChanges {
                 target: toolbar
 
-                height: shortSide
+                height: Screen.width
                 width: totalSpaceX
             }
             PropertyChanges {
@@ -120,13 +128,13 @@ Item {
             PropertyChanges {
                 target: handleBorderTop
 
-                height: shortSide
+                height: Screen.width
                 width: 1
             }
             PropertyChanges {
                 target: handleBorderBottom
 
-                height: shortSide
+                height: Screen.width
                 width: 1
             }
             PropertyChanges {
@@ -450,7 +458,7 @@ Item {
                 // Button graphics have some padding, thus remove some of that page margin
                 x: Theme.horizontalPageMargin - Theme.paddingMedium
                 y: mainButtonsContainer.y + mainButtons.height
-                width: shortSide - x - Theme.horizontalPageMargin
+                width: Screen.width - x - Theme.horizontalPageMargin
                 visible: expanded || animating
             }
 
@@ -458,7 +466,7 @@ Item {
                 id: title
 
                 height: minimumSpaceY
-                width: shortSide - 2 * Theme.horizontalPageMargin + Theme.paddingMedium - Theme.itemSizeLarge * buttonCountHorizontal - Theme.paddingSmall
+                width: Screen.width - 2 * Theme.horizontalPageMargin + Theme.paddingMedium - Theme.itemSizeLarge * buttonCountHorizontal - Theme.paddingSmall
                 anchors {
                     right: parent.right
                     rightMargin: Theme.horizontalPageMargin
@@ -581,7 +589,7 @@ Item {
             right: parent.right
         }
         height: handleWidth
-        width: shortSide
+        width: Screen.width
         visible: buttonCountHorizontal < 5
 
         onXChanged: {
@@ -602,7 +610,7 @@ Item {
                 top: parent.top
             }
             height: 1
-            width: shortSide
+            width: Screen.width
             color: Theme.colorScheme === Theme.LightOnDark ? "white" : "black"
         }
 
@@ -626,7 +634,7 @@ Item {
                 bottom: parent.bottom
             }
             height: 1
-            width: shortSide
+            width: Screen.width
             color: handleBorderTop.color
         }
     }

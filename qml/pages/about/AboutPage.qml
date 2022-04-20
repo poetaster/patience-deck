@@ -53,6 +53,8 @@ Page {
                         verticalCenter: parent.verticalCenter
                     }
                     source: Patience.getIconPath(Theme.iconSizeLauncher)
+                    sourceSize.height: Theme.iconSizeLauncher
+                    sourceSize.width: Theme.iconSizeLauncher
                 }
             }
 
@@ -60,7 +62,7 @@ Page {
                 linkColor: Theme.primaryColor
                 //% "Patience Deck is a collection of %1 supported patience games for Sailfish OS. "
                 //% "It reimplements game engine from <a href=%2>GNOME Aisleriot</a> and utilises "
-                //% "its implementations of patience games including manual pages and artwork."
+                //% "its implementations of patience games including translations, manual pages and artwork."
                 text: qsTrId("patience-la-about_text")
                     .arg(Patience.gamesCount)
                     .arg("\"https://wiki.gnome.org/Apps/Aisleriot\"")
@@ -74,19 +76,21 @@ Page {
             }
 
             Paragraph {
-                //% "Main developer: %1"
-                text: qsTrId("patience-la-see_also_manuals")
-                    .arg("Tomi Leppänen")
-                spacing: Theme.paddingSmall
-            }
-
-            Paragraph {
                 linkColor: Theme.primaryColor
                 //% "You may obtain source code and report bugs on Github: <a href=%2>%1</a>"
                 text: qsTrId("patience-la-source_code_report_bugs_github")
                     .arg("github.com/Tomin1/patience-deck")
                     .arg("\"https://github.com/Tomin1/patience-deck/\"")
                 onLinkActivated: Qt.openUrlExternally(link)
+                spacing: Theme.paddingMedium
+            }
+
+            Button {
+                //: Button to open the list of Patience Deck contributors
+                //% "Contributors"
+                text: qsTrId("patience-bt-contributors")
+                anchors.horizontalCenter: parent.horizontalCenter
+                onClicked: pageStack.push(contributorsPage)
             }
 
             SectionHeader {
@@ -152,6 +156,58 @@ Page {
     }
 
     Component {
+        id: contributorsPage
+
+        Page {
+            allowedOrientations: Orientation.All
+
+            SilicaFlickable {
+                anchors.fill: parent
+                contentHeight: contributorsContent.height
+
+                Column {
+                    id: contributorsContent
+
+                    bottomPadding: Theme.paddingLarge
+                    spacing: Theme.paddingMedium
+                    width: parent.width
+
+                    PageHeader {
+                        //: Page header for the list of Patience Deck contributors
+                        //% "Contributors of Patience Deck"
+                        title: qsTrId("patience-he-contributors")
+                    }
+
+                    SectionHeader {
+                        //: Section header for list of developers of Patience Deck
+                        //% "Developers"
+                        text: qsTrId("patience-se-developers")
+                    }
+
+                    Paragraph {
+                        //% "Main developer: %1"
+                        text: qsTrId("patience-la-see_also_manuals")
+                            .arg("Tomi Leppänen")
+                        spacing: Theme.paddingSmall
+                    }
+
+                    SectionHeader {
+                        //: Section header for list of translators of Patience Deck
+                        //% "Translators"
+                        text: qsTrId("patience-se-translators")
+                    }
+
+                    Paragraph {
+                        text: Patience.translators
+                    }
+                }
+
+                VerticalScrollDecorator { }
+            }
+        }
+    }
+
+    Component {
         id: authorsPage
 
         Page {
@@ -163,17 +219,37 @@ Page {
 
                 Column {
                     id: authorsContent
+
+                    bottomPadding: Theme.paddingLarge
+                    spacing: Theme.paddingMedium
                     width: parent.width
 
                     PageHeader {
                         //% "Thanks to"
                         title: qsTrId("patience-he-thanks_to")
-                        //% "GNOME Aislertiot authors"
+                        //% "GNOME Aisleriot authors"
                         description: qsTrId("patience-de-aisleriot_authors")
                     }
 
                     Paragraph {
                         text: Patience.aisleriotAuthors
+                    }
+
+                    Paragraph {
+                        //: Section to show Aisleriot translator/translation information, substitute
+                        //: word language with the name of the language of the translation.
+                        //: Original is pretty generic on purpose, feel free to translate this to
+                        //: something works for the result
+                        //% "Aisleriot translator information for language"
+                        text: qsTrId("patience-se-translator-information")
+                        topPadding: Theme.paddingMedium
+                        horizontalAlignment: Text.AlignRight
+                        visible: Patience.aisleriotTranslatorInfo !== ""
+                    }
+
+                    Paragraph {
+                        text: Patience.aisleriotTranslatorInfo
+                        visible: Patience.aisleriotTranslatorInfo !== ""
                     }
                 }
 

@@ -15,6 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <libintl.h>
 #include <QDir>
 #include <QSet>
 #include "logging.h"
@@ -88,24 +89,33 @@ QSet<QString> GameList::s_allowlist = {
     QStringLiteral("camelot"),
     QStringLiteral("carpet"),
     QStringLiteral("clock"),
+    QStringLiteral("cruel"),
     QStringLiteral("diamond-mine"),
+    QStringLiteral("doublets"),
     QStringLiteral("easthaven"),
     QStringLiteral("eliminator"),
     QStringLiteral("forty-thieves"),
     QStringLiteral("gaps"),
     QStringLiteral("gay-gordons"),
     QStringLiteral("giant"),
+    QStringLiteral("glenwood"),
     QStringLiteral("helsinki"),
     QStringLiteral("isabel"),
+    QStringLiteral("jamestown"),
     QStringLiteral("king-albert"),
+    QStringLiteral("kings-audience"),
     QStringLiteral("lady-jane"),
     QStringLiteral("napoleons-tomb"),
+    QStringLiteral("neighbor"),
     QStringLiteral("plait"),
     QStringLiteral("poker"),
+    QStringLiteral("quatorze"),
+    QStringLiteral("streets-and-alleys"),
     QStringLiteral("ten-across"),
     QStringLiteral("terrace"),
     QStringLiteral("thieves"),
     QStringLiteral("triple-peaks"),
+    QStringLiteral("union-square"),
     QStringLiteral("valentine"),
     QStringLiteral("wall"),
     QStringLiteral("westhaven"),
@@ -113,9 +123,11 @@ QSet<QString> GameList::s_allowlist = {
 };
 
 QHash<int, QByteArray> GameList::s_roleNames = {
-    { Qt::DisplayRole, "display" },
+    { Qt::DisplayRole, "display" }, // alias to translated
     { FileNameRole, "filename" },
     { NameRole, "name" },
+    { TranslatedRole, "translated" },
+    { CapitalizedRole, "capitalized" },
     { SupportedRole, "supported" },
     { SectionRole, "section" },
     { FavoriteRole, "favorite" },
@@ -128,16 +140,18 @@ GameList::GameList(QObject *parent)
     bool showAll = GameList::showAll();
     QDir gameDirectory(Constants::GameDirectory);
     for (auto &entry : gameDirectory.entryList(QStringList() << QStringLiteral("*.scm"),
-                                               QDir::Files | QDir::Readable, QDir::Name)) {
+                                               QDir::Files | QDir::Readable)) {
         if (showAll || isSupported(entry))
             m_games.append(entry);
     }
+    std::sort(m_games.begin(), m_games.end(), lessThan);
 
     m_lastPlayed = Patience::instance()->history().mid(0, ShownLastPlayedGames);
 
     auto favorites = m_favoriteConf.value(DefaultFavorites).toString().split(';');
     favorites.removeAll(QString());
-    m_favorites = favorites;
+    std::sort(favorites.begin(), favorites.end(), lessThan);
+    m_favorites.swap(favorites);
 
     connect(&m_favoriteConf, &MGConfItem::valueChanged, this, [&] {
         qCDebug(lcGameList) << "Saved favorites:" << m_favoriteConf.value().toString();
@@ -157,11 +171,14 @@ QVariant GameList::data(const QModelIndex &index, int role) const
 
     switch (role) {
     case DisplayRole:
-        return displayable(getFileName(index.row()));
+    case TranslatedRole:
+        return translated(getFileName(index.row()));
     case FileNameRole:
         return getFileName(index.row());
     case NameRole:
         return name(getFileName(index.row()));
+    case CapitalizedRole:
+        return capitalized(getFileName(index.row()));
     case SupportedRole:
         return isSupported(getFileName(index.row()));
     case SectionRole:
@@ -173,7 +190,7 @@ QVariant GameList::data(const QModelIndex &index, int role) const
     }
 }
 
-QString GameList::displayable(const QString &fileName)
+QString GameList::capitalized(const QString &fileName)
 {
     QString displayName(name(fileName));
     bool startOfWord = true;
@@ -181,12 +198,17 @@ QString GameList::displayable(const QString &fileName)
         if (startOfWord) {
             displayName[i] = QChar(displayName[i]).toUpper();
             startOfWord = false;
-        } else if (displayName[i] == QChar('-')) {
+        } else if (displayName[i] == '-') {
             startOfWord = true;
-            displayName[i] = QChar(' ');
+            displayName[i] = ' ';
         }
     }
     return displayName;
+}
+
+QString GameList::translated(const QString &fileName)
+{
+    return QString(gettext(capitalized(fileName).toUtf8().constData()));
 }
 
 QString GameList::name(const QString &fileName)
@@ -208,7 +230,7 @@ void GameList::setFavorite(int row, bool favorite)
     Section section = getSection(row);
     bool changed = false;
 
-    auto it = std::lower_bound(m_favorites.begin(), m_favorites.end(), fileName);
+    auto it = std::lower_bound(m_favorites.begin(), m_favorites.end(), fileName, lessThan);
     if (favorite) {
         if (it == m_favorites.end() || *it != fileName) {
             int pos = std::distance(m_favorites.begin(), it) + m_lastPlayed.count();
@@ -240,7 +262,7 @@ void GameList::setFavorite(int row, bool favorite)
             emitFavoriteChanged(row + (favorite ? 1 : -1));
         } else {
             int allGamesRow = std::distance(m_games.begin(),
-                    std::lower_bound(m_games.begin(), m_games.end(), fileName));
+                    std::lower_bound(m_games.begin(), m_games.end(), fileName, lessThan));
             emitFavoriteChanged(allGamesRow + m_lastPlayed.count() + m_favorites.count());
         }
     }
@@ -296,4 +318,9 @@ void GameList::emitFavoriteChanged(int row)
 {
     auto index = createIndex(row, 0);
     emit dataChanged(index, index, QVector<int>() << FavoriteRole);
+}
+
+bool GameList::lessThan(const QString &a, const QString &b)
+{
+    return QString::localeAwareCompare(translated(a), translated(b)) < 0;
 }
