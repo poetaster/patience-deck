@@ -28,6 +28,7 @@ const QString CardStyleConf = QStringLiteral("/cardStyle");
 const QString RegularStyle = QStringLiteral("regular");
 const QString OptimizedStyle = QStringLiteral("optimized");
 const QString SimplifiedStyle = QStringLiteral("simplified");
+const QString MahjongStyle = QStringLiteral("mahjong");
 const QString FileTemplate = QStringLiteral("%1/anglo%2.svg");
 
 } // namespace
@@ -48,7 +49,7 @@ TextureRenderer::TextureRenderer(QObject *parent)
 void TextureRenderer::addArguments(QCommandLineParser *parser)
 {
     parser->addOptions({
-        {{"c", "cards"}, "Set card style", "regular|optimized|simplified"},
+        {{"c", "cards"}, "Set card style", "regular|optimized|simplified|mahjong"},
     });
 }
 
@@ -57,7 +58,7 @@ void TextureRenderer::setArguments(QCommandLineParser *parser)
     if (parser->isSet("cards")) {
         MGConfItem cardsConf(Constants::ConfPath + CardStyleConf);
         QString value = parser->value("cards");
-        if (value == RegularStyle || value == OptimizedStyle || value == SimplifiedStyle) {
+        if (value == RegularStyle || value == OptimizedStyle || value == SimplifiedStyle || value == MahjongStyle) {
             cardsConf.set(value);
             cardsConf.sync();
         }
