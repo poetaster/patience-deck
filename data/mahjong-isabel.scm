@@ -54,7 +54,7 @@
   (add-normal-slot '())
 
   (set! HORIZPOS 0)
-  (set! VERTPOS 0.1)
+  (set! VERTPOS 0.3)
 
   (add-blank-slot)
   (add-normal-slot '())
