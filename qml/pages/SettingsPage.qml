@@ -161,7 +161,7 @@ Page {
 
             ComboBox {
                 property bool ready
-                readonly property var choices: ["regular", "optimized", "simplified"]
+                readonly property var choices: ["regular", "optimized", "simplified", "mahjong"]
 
                 //: Combo box for selecting card style
                 //% "Card style"
@@ -188,6 +188,12 @@ Page {
                         //: Simpler style, more suitable for tiny cards
                         //% "Simplified"
                         text: qsTrId("patience-la-card_style_simplified")
+                    }
+                    MenuItem {
+                        //: Mahjong style, suitable for Mahjong play
+                        //% "Mahjong"
+                        //text: qsTrId("patience-la-card_style_mahjong")
+                        text: "Mahjong"
                     }
                 }
 
