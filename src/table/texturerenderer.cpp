@@ -70,7 +70,7 @@ QSvgRenderer *TextureRenderer::renderer()
     if (!m_renderer) {
         QString style = m_cardStyleConf.value().toString();
         QString variant;
-        if (style == OptimizedStyle || style == SimplifiedStyle)
+        if (style == OptimizedStyle || style == SimplifiedStyle || style == MahjongStyle)
             variant = QStringLiteral("-%1").arg(style);
         m_renderer = new QSvgRenderer(FileTemplate.arg(Constants::DataDirectory).arg(variant), this);
     }
