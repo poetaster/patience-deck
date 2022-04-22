@@ -20,6 +20,9 @@ games.files -= aisleriot/games/api.scm
 games.files -= aisleriot/games/card-monkey.scm
 games.files -= aisleriot/games/template.scm
 games.files -= aisleriot/games/test.scm
+games.files += data/mahjong-isabel.scm
+games.files += data/mahjong-zebra.scm
+games.files += data/mahjong-xwall.scm
 games.path = /usr/share/$$(NAME)/games/
 
 api.files = aisleriot/games/api.scm
@@ -32,6 +35,7 @@ figures.files = aisleriot/help/C/figures/*.png
 figures.path = /usr/share/$$(NAME)/help/figures/
 
 data.files = aisleriot/cards/anglo.svg
+data.files += data/anglo-mahjong.svg
 data.path = /usr/share/$$(NAME)/data/
 data.path = /usr/share/$$(NAME)/data/
 
