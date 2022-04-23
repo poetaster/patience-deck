@@ -51,10 +51,10 @@
   (shuffle-deck)
 
 ; walls
- (add-76-row) 
- (add-76-row) 
- (add-76-row) 
- (add-76-row) 
+ (add-67-row) 
+ (add-67-row) 
+ (add-67-row) 
+ (add-67-row) 
  ;(deal-cards-from-deck DECK  walldown)  
  (deal-cards-face-up-from-deck DECK  walls)  
  
@@ -62,6 +62,15 @@
 
 ; create on of the 7 6 rows * n(4)
 
+
+(define (add-67-row)
+  (set! HORIZPOS (+ HORIZPOS 0.4))
+  (add-empty-normal-slots 6)
+  (add-carriage-return-slot)
+  (set! VERTPOS (- VERTPOS 0.7))
+  (add-empty-normal-slots 7)
+  (add-carriage-return-slot)
+)
 
 (define (add-76-row)
   (add-empty-normal-slots 7)
